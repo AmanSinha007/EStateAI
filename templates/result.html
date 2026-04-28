@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Result</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="result-container">
+<div class="result-card">
+
+    <h2>💰 Prediction Result</h2>
+
+    <div class="price">
+        {{ prediction_text }}
+    </div>
+
+    <h3>📌 Base Price (Average Market Price)</h3>
+    <p style="font-size:18px; color:#ffdd57;">
+        {{ base_value }}
+    </p>
+
+    <h3>📊 Feature Contribution</h3>
+
+    <div class="chart-box">
+        <canvas id="shapChart"></canvas>
+    </div>
+
+    <a href="/" class="back-btn">⬅️ Go Back</a>
+
+</div>
+</div>
+
+<script>
+    const features = JSON.parse('{{ feature_names | tojson | safe }}');
+    const values = JSON.parse('{{ shap_values | tojson | safe }}');
+</script>
+
+<!--SHAP GRAPH-->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+
+    if (!features || !values || features.length === 0) {
+        document.getElementById("shapChart").parentElement.innerHTML =
+            "<p style='color:white;text-align:center;'>No graph data available</p>";
+        return;
+    }
+
+    new Chart(document.getElementById('shapChart'), {
+        type: 'bar',
+        data: {
+            labels: features,
+            datasets: [{
+                label: 'Impact on Price (₹)',
+                data: values,
+                backgroundColor: values.map(v => v > 0 ? '#00c853' : '#ff3d00')
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return "₹ " + context.raw.toLocaleString();
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: function(value) {
+                            return "₹ " + value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+});
+</script>
+<div style="margin-top:20px; text-align:center;">
+    <p style="font-size:18px;">
+        <b>Top Positive Factor:</b> 
+        <span style="color:#00c853;">{{ feature_names[-1] }}</span>
+    </p>
+
+    <p style="font-size:18px;">
+        <b>Top Negative Factor:</b> 
+        <span style="color:#ff3d00;">{{ feature_names[0] }}</span>
+    </p>
+</div>
+
+</body>
+</html>
